@@ -122,20 +122,20 @@ class Spider_Model:
 			self.cu.execute('insert into mimimatica_books(book_name,put_time,category_id) select "{}","{}","{}" where not exists(select * from mimimatica_books where book_name="{}")'.format(str[2],self.now(),self.rowid,str[2])).fetchone()
 			# print(cu.execute('select typeof(1)'))
 			self.book_id = int(self.cu.execute('select book_id from mimimatica_books where book_name="{}"'.format(str[2])).fetchone()[0]) #获取 book表主键
-			print('insert book:"{}{}"OK,bookid:{}'.format(str[1],str[2],self.book_id))
+			print('insert book:"[{}]{}"OK,bookid:{}'.format(str[1],str[2],self.book_id))
 			self.i = 1
 			# xmlhandle.makeXmlTag('task.xml',category=str[1],category_id = self.rowid,book_id=self.book_id)
 			for temp in self.content_generator(host+str[3]):
 				# print('temp',temp)
 				self.cu.execute('insert into mimimatica_content(book_id,put_time,content,content_title) values(?,?,?,?)',(self.book_id,self.now(),temp,'第{}章'.format(self.i)))
-				print('获取第%d章成功'%i)
+				print('获取第%d章成功'%self.i)
 				self.i = self.i+1
 			
-			if i<=1:
+			if self.i<=1:
 				return -1
 			else:
 				con.commit()
-				print('入库成功'%i)
+				print('%s入库成功'%str[2])
 				return 1
 		else:
 			print('记录"{}"已经存在'.format(str[2]))

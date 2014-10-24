@@ -55,15 +55,19 @@ class Spider_Model:
 			category = item.find_previous(text=True).replace('[','').replace(']','').strip()
 			title = item.a.get_text().strip()
 			sub_url =item.a["href"]
-			# print(category,title,sub_url)
+			print(category,len(category),title)
 			if self.i<5:
-				if self.cu.execute('select sub_url from url_list where sub_url=?',(sub_url,)).fetchone()==None and len(category)==4:
-					self.cu.execute('insert  into url_list values(?,?,?,?)',(category,title,sub_url,0))
-					self.num=self.num+1
-					print('%sinsert succeed'%title)
+				if len(category)==4:
+					if self.cu.execute('select sub_url from url_list where sub_url=?',(sub_url,)).fetchone()==None:
+						self.cu.execute('insert  into url_list values(?,?,?,?)',(category,title,sub_url,0))
+						self.num=self.num+1
+						print('%sinsert succeed'%title)
+					else:
+						self.i=self.i+1
+						print('%salready exists'%title)
+						continue
 				else:
-					self.i=self.i+1
-					print('%salready exists'%title)
+					print('%s不符合规范，停止处理'%title)
 					continue
 			else:
 				print('超过%d条记录重复停止添加'%self.i)
@@ -94,11 +98,17 @@ class Spider_Model:
 			print('ERRO:argument mast a "sqlite3.Connection"!')
 			return
 			
-	def Get_Next_Page(self,html):
+	def Get_Next_Page(self,url):
 		# self.host = 'http://gfw74.tk/'
-		if html!='no,data':
-			self.html = BeautifulSoup(html)
-			self.dom = self.html.select('.pages input')[0].find_previous('a').find_previous('a')
+		self.page=self.GetPage(url)
+		if self.page!='no,data':
+			self.html = BeautifulSoup(self.page)
+			try:
+				self.dom = self.html.select('.pages input')[0].find_previous('a').find_previous('a')
+			except Exception as e:
+				print(str(e))
+				return [url]
+			
 			self.num = int(self.dom.get_text())
 			# print(self.num)
 			self.link = host+self.dom['href'].replace('../../../','').replace('&page=%s'%self.num,'&page=')
@@ -146,7 +156,7 @@ class Spider_Model:
 			
 
 	def content_generator(self,url):
-		self.article_list=ss.Get_Next_Page(ss.GetPage(url))#获取文章分页列表
+		self.article_list=ss.Get_Next_Page(url)#获取文章分页列表
 		if self.article_list:
 			for item in self.article_list:
 				self.contents = ss.Get_Content(ss.GetPage(item))
@@ -170,9 +180,9 @@ if __name__ == '__main__':
 
 	ss = Spider_Model()
 	print('开始更新文章列表')
-	html = ss.GetPage('http://gfw74.tk/thread0806.php?fid=20')
+	url = 'http://gfw74.tk/thread0806.php?fid=20'
 	n=1
-	for url in ss.Get_Next_Page(html):
+	for url in ss.Get_Next_Page(url):
 		if n>0:
 			n=n+ss.GetList(ss.GetPage(url))
 			print('暂停10秒')
